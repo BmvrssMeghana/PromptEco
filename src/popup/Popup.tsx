@@ -345,7 +345,7 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#4B5563', flexWrap: 'wrap', gap: '4px' }}>
                     <span>Tokens: <strong>{testResult.originalTokens.tokens}</strong> → <strong style={{ color: testResult.impact.tokensSaved > 0 ? '#10B981' : '#111827' }}>{testResult.optimizedTokens.tokens}</strong></span>
                     <span>Reduction: <strong style={{ color: testResult.impact.reductionPercentage > 0 ? '#10B981' : '#4B5563' }}>
-                      {testResult.impact.reductionPercentage > 0 ? `-${testResult.impact.reductionPercentage}%` : '0% (Optimal)'}
+                      {testResult.impact.reductionPercentage > 0 ? `-${testResult.impact.reductionPercentage}%` : '0% (No improvement)'}
                     </strong></span>
                     <span>Saved: <strong style={{ color: testResult.impact.tokensSaved > 0 ? '#10B981' : '#4B5563' }}>
                       {testResult.impact.savedMgCO2.toFixed(2)} mg CO₂e
@@ -355,13 +355,13 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
                   {/* Suggestion Card */}
                   <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '8px', padding: '10px 12px', fontSize: '12.5px', lineHeight: '1.45', color: '#111827' }}>
                     <div style={{ fontSize: '10px', color: '#6B7280', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.04em', marginBottom: '4px' }}>
-                      {testResult.status === 'optimized' ? 'Optimized Rewrite' : 'Concise Evaluation'}
+                      {testResult.status === 'optimized' ? 'Optimized Rewrite' : 'No improvement found'}
                     </div>
                     {testResult.status === 'optimized' ? (
                       <div>{testResult.optimizedPrompt}</div>
                     ) : (
                       <div style={{ color: '#059669', fontWeight: 500 }}>
-                        ✓ This prompt is already concise and token-efficient. No safe rules were applied to avoid altering your instructions.
+                      ✓ No improvement found. No safe, meaningful change was identified for this prompt.
                       </div>
                     )}
                   </div>

@@ -157,7 +157,7 @@ export const InlinePanel: React.FC<InlinePanelProps> = ({
               <div className="prompteco-metric-label">
                 <span>Optimized tokens</span>
                 <span className="prompteco-badge prompteco-badge-eco" title="Modeled reduction">
-                  {status === 'optimized' ? `-${impact.reductionPercentage}%` : 'Optimal'}
+                  {status === 'optimized' ? `-${impact.reductionPercentage}%` : 'No improvement'}
                 </span>
               </div>
               <div className={`prompteco-metric-value ${impact.tokensSaved > 0 ? 'highlight-green' : ''}`}>
@@ -174,7 +174,7 @@ export const InlinePanel: React.FC<InlinePanelProps> = ({
               style={{ padding: '4px 10px', fontSize: '11px' }}
             >
               <Sparkles size={12} />
-              Optimized suggestion
+              {status === 'optimized' ? 'Optimized suggestion' : 'Prompt analysis'}
             </button>
             <button
               className={`prompteco-btn ${activeTab === 'template' ? 'prompteco-btn-primary' : 'prompteco-btn-secondary'}`}
@@ -190,7 +190,7 @@ export const InlinePanel: React.FC<InlinePanelProps> = ({
             <div className="prompteco-unchanged-state">
               <ShieldCheck size={16} color="#10B981" />
               <div>
-                <strong>Prompt is already concise and optimal!</strong> No safe rule reduced tokens without altering your instructions.
+                <strong>No improvement found.</strong> No safe, meaningful change was identified for this prompt.
               </div>
             </div>
           ) : (
@@ -248,7 +248,7 @@ export const InlinePanel: React.FC<InlinePanelProps> = ({
             <div className="prompteco-impact-item">
               <span className="prompteco-impact-label">Token reduction</span>
               <span className="prompteco-impact-num green">
-                {impact.reductionPercentage > 0 ? `${impact.reductionPercentage}% reduction` : '0% (Already concise)'}
+                {impact.reductionPercentage > 0 ? `${impact.reductionPercentage}% reduction` : '0% (No improvement)'}
               </span>
             </div>
 
@@ -257,7 +257,7 @@ export const InlinePanel: React.FC<InlinePanelProps> = ({
               <span className="prompteco-impact-num green">
                 {impact.tokensSaved > 0
                   ? `${impact.savedMgCO2.toFixed(2)} mg CO₂e saved`
-                  : 'Zero waste'}
+                  : '0.00 mg CO₂e estimated'}
               </span>
             </div>
 

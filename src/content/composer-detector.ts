@@ -31,7 +31,12 @@ export function detectPlatform(): ComposerElementInfo['platform'] {
 // Each entry: { selector, isContentEditable }
 const ORDERED_SELECTORS: Array<{ sel: string; ce: boolean }> = [
   // ── ChatGPT ───────────────────────────────────────────────────────────────
+  { sel: '#mobile-composer-prompt', ce: false },
   { sel: '#prompt-textarea', ce: true },
+  { sel: 'textarea#prompt-textarea', ce: false },
+  { sel: '[data-testid="composer"] [contenteditable="true"]', ce: true },
+  { sel: 'form [contenteditable="true"][role="textbox"]', ce: true },
+  { sel: '[contenteditable="plaintext-only"][role="textbox"]', ce: true },
   { sel: 'div#prompt-textarea[contenteditable="true"]', ce: true },
   { sel: 'textarea[data-testid="prompt-textarea"]', ce: false },
   { sel: 'div[contenteditable="true"][data-placeholder*="message" i]', ce: true },
@@ -39,6 +44,8 @@ const ORDERED_SELECTORS: Array<{ sel: string; ce: boolean }> = [
 
   // ── Claude ────────────────────────────────────────────────────────────────
   { sel: 'div.ProseMirror[contenteditable="true"]', ce: true },
+  { sel: '[data-testid="chat-input"] [contenteditable="true"]', ce: true },
+  { sel: '.tiptap[contenteditable="true"]', ce: true },
   { sel: 'fieldset div[contenteditable="true"]', ce: true },
   { sel: '[data-testid="chat-input"][contenteditable="true"]', ce: true },
   { sel: 'div[contenteditable="true"].font-claude-message', ce: true },
@@ -79,7 +86,6 @@ const ORDERED_SELECTORS: Array<{ sel: string; ce: boolean }> = [
  */
 function isVisible(el: HTMLElement): boolean {
   if (!el) return false;
-  if (el.offsetParent === null && !el.closest('dialog') && !el.closest('[role="dialog"]')) return false;
   const style = window.getComputedStyle(el);
   if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
   const rect = el.getBoundingClientRect();
@@ -107,6 +113,24 @@ function findContainer(el: HTMLElement): HTMLElement {
 export function findComposerElement(): ComposerElementInfo | null {
   const platform = detectPlatform();
 
+  // Prefer the editor the user is actively typing in when a site renders more
+  // than one composer (for example, a hidden mobile/desktop responsive copy).
+  const active = document.activeElement as HTMLElement | null;
+  if (active && isVisible(active)) {
+    const tag = active.tagName;
+    const isTextArea = tag === 'TEXTAREA';
+    const isCE = active.isContentEditable || active.getAttribute('contenteditable') === 'true';
+    const isMultilineTextbox = active.getAttribute('role') === 'textbox' && active.getAttribute('aria-multiline') === 'true';
+    if (isTextArea || isCE || isMultilineTextbox) {
+      return {
+        inputElement: active,
+        containerElement: findContainer(active),
+        isContentEditable: isCE,
+        platform
+      };
+    }
+  }
+
   // 1. Try ordered selectors
   for (const { sel, ce } of ORDERED_SELECTORS) {
     try {
@@ -117,7 +141,7 @@ export function findComposerElement(): ComposerElementInfo | null {
           return {
             inputElement: el,
             containerElement: findContainer(el),
-            isContentEditable: ce || el.getAttribute('contenteditable') === 'true',
+            isContentEditable: ce || el.isContentEditable || el.getAttribute('contenteditable') === 'true',
             platform
           };
         }
@@ -128,21 +152,6 @@ export function findComposerElement(): ComposerElementInfo | null {
   }
 
   // 2. Fall back: currently focused element if it's an input
-  const active = document.activeElement as HTMLElement | null;
-  if (active && isVisible(active)) {
-    const tag = active.tagName;
-    const isTextArea = tag === 'TEXTAREA';
-    const isCE = active.getAttribute('contenteditable') === 'true';
-    if (isTextArea || isCE) {
-      return {
-        inputElement: active,
-        containerElement: findContainer(active),
-        isContentEditable: isCE,
-        platform
-      };
-    }
-  }
-
   return null;
 }
 
@@ -152,7 +161,7 @@ export function findComposerElement(): ComposerElementInfo | null {
 export function readComposerText(info: ComposerElementInfo): string {
   if (info.isContentEditable) {
     const text = info.inputElement.innerText;
-    return (text && text.trim()) ? text : (info.inputElement.textContent || '');
+    return text ?? info.inputElement.textContent ?? '';
   }
   return (info.inputElement as HTMLTextAreaElement).value || '';
 }

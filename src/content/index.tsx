@@ -53,14 +53,13 @@ function renderPanel(analysis: OptimizationResult | null) {
  * Called whenever the composer text changes.
  * Updates broadcast AND runs the optimizer.
  */
-function handleInputChange(text: string, emissionPresetId: string, shouldRenderPanel = true) {
+function handleInputChange(text: string, emissionPresetId: string, shouldRenderPanel = true, force = false) {
   const trimmed = text.trim();
   broadcastLivePrompt(trimmed);
 
-  if (trimmed === lastAnalyzedText) return;
-  lastAnalyzedText = trimmed;
-
+  if (trimmed === lastAnalyzedText && !force) return;
   if (!shouldRenderPanel) return;
+  lastAnalyzedText = trimmed;
   if (!trimmed) { renderPanel(null); return; }
 
   const result = optimizePrompt(trimmed, emissionPresetId);
@@ -109,6 +108,7 @@ function attachInputListeners(
   const fireChange = () => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
+      if (activeComposer?.inputElement !== composer.inputElement) return;
       const text = readComposerText(composer);
       handleInputChange(text, emissionPresetId, renderInline);
     }, debounceMs);
@@ -116,12 +116,14 @@ function attachInputListeners(
 
   composer.inputElement.addEventListener('input', fireChange);
   composer.inputElement.addEventListener('keyup', fireChange);
-  composer.inputElement.addEventListener('paste', () => setTimeout(fireChange, 50));
+  composer.inputElement.addEventListener('paste', fireChange);
   composer.inputElement.addEventListener('compositionend', fireChange);
+  composer.inputElement.addEventListener('change', fireChange);
 
   // Fire immediately if text already present on attach
   const existing = readComposerText(composer);
-  if (existing.trim()) fireChange();
+  if (existing.trim()) handleInputChange(existing, emissionPresetId, renderInline, true);
+  else handleInputChange('', emissionPresetId, renderInline, true);
 }
 
 /**
@@ -129,12 +131,22 @@ function attachInputListeners(
  */
 async function checkAndAttach(debounceMs: number, emissionPresetId: string, renderInline: boolean) {
   const found = findComposerElement();
-  if (!found) return;
+  if (!found) {
+    if (activeComposer) {
+      activeComposer = null;
+      lastAnalyzedText = '';
+      if (debounceTimer) clearTimeout(debounceTimer);
+      handleInputChange('', emissionPresetId, renderInline, true);
+    }
+    return;
+  }
 
   // Already attached to this element — skip
   if (activeComposer?.inputElement === found.inputElement) return;
 
   console.log('[PromptEco] Composer detected on', found.platform, '—', found.inputElement.tagName);
+  if (debounceTimer) clearTimeout(debounceTimer);
+  lastAnalyzedText = '';
   activeComposer = found;
 
   if (renderInline) {
@@ -189,18 +201,27 @@ async function initPromptEco() {
     observerActive = true;
     let mutationDebounce: ReturnType<typeof setTimeout> | null = null;
 
-    const observer = new MutationObserver(() => {
+    const observer = new MutationObserver((mutations) => {
+      const relevant = mutations.some((mutation) => {
+        const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
+        return !!target && !currentMountEl?.contains(target);
+      });
+      if (!relevant) return;
       if (mutationDebounce) clearTimeout(mutationDebounce);
       mutationDebounce = setTimeout(() => {
-        checkAndAttach(debounceMs, emissionPresetId, renderInline);
-      }, 300);
+        void checkAndAttach(debounceMs, emissionPresetId, renderInline).then(() => {
+          if (activeComposer) {
+            handleInputChange(readComposerText(activeComposer), emissionPresetId, renderInline);
+          }
+        });
+      }, debounceMs);
     });
 
     observer.observe(document.body, {
       childList: true,
       subtree: true,
       attributes: false,
-      characterData: false
+      characterData: true
     });
   }
 
@@ -217,7 +238,7 @@ async function initPromptEco() {
       // Same element — just broadcast current value
       const text = readComposerText(activeComposer);
       if (text.trim() !== lastAnalyzedText) {
-        handleInputChange(text, emissionPresetId, false); // broadcast only, don't re-render
+        handleInputChange(text, emissionPresetId, renderInline, true);
       }
     }
   }, 1500);
