@@ -1,0 +1,43 @@
+:root {
+  /* Brand Monochrome Design System */
+  --pe-bg-canvas: #FFFFFF;
+  --pe-bg-surface: #F9FAFB;
+  --pe-bg-subtle: #F3F4F6;
+  --pe-bg-hover: #E5E7EB;
+  
+  --pe-text-primary: #111827;
+  --pe-text-secondary: #4B5563;
+  --pe-text-muted: #6B7280;
+  --pe-text-faint: #9CA3AF;
+  
+  --pe-border-subtle: #E5E7EB;
+  --pe-border-medium: #D1D5DB;
+  --pe-border-strong: #9CA3AF;
+  
+  /* Eco Green (Reserved exclusively for positive environmental savings) */
+  --pe-green-50: #ECFDF5;
+  --pe-green-100: #D1FAE5;
+  --pe-green-500: #10B981;
+  --pe-green-600: #059669;
+  --pe-green-700: #047857;
+  --pe-green-text: #065F46;
+  
+  /* Dark mode variants */
+  --pe-dark-bg: #111827;
+  --pe-dark-surface: #1F2937;
+  --pe-dark-border: #374151;
+  
+  /* Shadows & Radius */
+  --pe-radius-sm: 6px;
+  --pe-radius-md: 10px;
+  --pe-radius-lg: 14px;
+  --pe-radius-full: 9999px;
+  
+  --pe-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --pe-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --pe-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --pe-shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  
+  --pe-font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --pe-transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}

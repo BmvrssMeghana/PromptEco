@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="leafGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="100%" stop-color="#059669" />
+    </linearGradient>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#1F2937" />
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <circle cx="64" cy="64" r="60" fill="url(#bgGrad)" stroke="#374151" stroke-width="2"/>
+  
+  <!-- Subtle Eco Ring -->
+  <circle cx="64" cy="64" r="52" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.4"/>
+  
+  <!-- Sleek Leaf & Energy Spark Motif -->
+  <path d="M 64 26 C 88 28, 98 48, 96 74 C 94 94, 76 102, 64 102 C 52 102, 34 94, 32 74 C 30 48, 40 28, 64 26 Z" 
+        fill="url(#leafGrad)" />
+        
+  <!-- Center Leaf Vein / Clean Tech Line -->
+  <path d="M 64 36 L 64 94" stroke="#ECFDF5" stroke-width="3" stroke-linecap="round" opacity="0.9"/>
+  <path d="M 64 54 Q 74 48, 82 52" stroke="#ECFDF5" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.8"/>
+  <path d="M 64 68 Q 54 62, 46 66" stroke="#ECFDF5" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="0.8"/>
+  
+  <!-- Spark/Prompt Pulse Dot -->
+  <circle cx="64" cy="32" r="3.5" fill="#34D399" />
+</svg>
