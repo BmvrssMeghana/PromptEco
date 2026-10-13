@@ -22,6 +22,12 @@ function broadcastLivePrompt(text: string) {
   }
 }
 
+/** Remove cards injected by older PromptEco builds from already-open AI pages. */
+function removeLegacyInlinePanel() {
+  document.querySelectorAll('#prompteco-anchor, #prompteco-inline-root, .prompteco-anchor-wrap, .prompteco-container')
+    .forEach((element) => element.remove());
+}
+
 /**
  * Called whenever the composer text changes.
  * Broadcasts the current composer value to the existing extension side panel.
@@ -91,6 +97,9 @@ async function checkAndAttach(debounceMs: number) {
  * Main entry point
  */
 async function initPromptEco() {
+  // Live analysis now belongs in the browser side panel; clear old in-page cards
+  // when a page is visited with the updated extension.
+  removeLegacyInlinePanel();
   const settings = await getSettings();
 
   // Message handler: popup → content script

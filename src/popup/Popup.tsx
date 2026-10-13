@@ -278,7 +278,7 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '11px', fontWeight: 600, color: '#10B981', background: '#ECFDF5', padding: '3px 8px', borderRadius: '12px' }}>
-            v1.0.0
+            v1.0.1
           </span>
         </div>
       </header>
@@ -340,7 +340,10 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
                 value={promptInput}
                 onChange={handleInputChange}
                 onFocus={() => { isInputFocusedRef.current = true; }}
-                onBlur={() => { isInputFocusedRef.current = false; }}
+                onBlur={() => {
+                  isInputFocusedRef.current = false;
+                  setIsUserEdited(false);
+                }}
                 rows={3}
                 placeholder="Live prompt from ChatGPT, Claude, or type here manually..."
               />
