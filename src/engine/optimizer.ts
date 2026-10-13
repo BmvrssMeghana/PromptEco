@@ -53,6 +53,19 @@ function removeRepeatedSentences(text: string): { text: string; removed: boolean
   return { text: kept.join(' '), removed };
 }
 
+/** Collapse an immediately repeated word only when it is a clear typing stutter. */
+function removeRepeatedWords(text: string): { text: string; removed: boolean } {
+  if (/```|~~~|`[^`]+`|(^|\n)\s*>/m.test(text)) return { text, removed: false };
+  const meaningfulRepeats = new Set(['had', 'that', 'very', 'so', 'no', 'not', 'never', 'more', 'less', 'too', 'can', 'will', 'should', 'must', 'is', 'was', 'do']);
+  let removed = false;
+  const result = text.replace(/\b([a-z]{2,})\b[\t ]+\1\b/gi, (match, word: string) => {
+    if (meaningfulRepeats.has(word.toLocaleLowerCase())) return match;
+    removed = true;
+    return word;
+  });
+  return { text: result, removed };
+}
+
 function optimizeText(original: string): { text: string; changes: string[] } {
   let text = original;
   const changes: string[] = [];
@@ -69,6 +82,13 @@ function optimizeText(original: string): { text: string; changes: string[] } {
       text = verbal;
       changes.push('Removed verbal filler');
     }
+    // Conversational greeting + transition is removable as framing, while a standalone
+    // greeting or greeting used as a subject remains untouched.
+    const conversationalStart = text.replace(/^(?:hello|hi|hey)[,!]?\s+so\s+/i, '');
+    if (conversationalStart !== text && conversationalStart.trim()) {
+      text = conversationalStart;
+      changes.push('Removed conversational filler');
+    }
     for (const opener of SAFE_OPENERS) {
       const withoutOpener = text.replace(opener.pattern, '');
       if (withoutOpener !== text && withoutOpener.trim()) {
@@ -81,6 +101,11 @@ function optimizeText(original: string): { text: string; changes: string[] } {
     if (duplicate.removed) {
       text = duplicate.text;
       changes.push('Removed repeated instruction');
+    }
+    const repeatedWord = removeRepeatedWords(text);
+    if (repeatedWord.removed) {
+      text = repeatedWord.text;
+      changes.push('Removed repeated word');
     }
   }
   return { text, changes: [...new Set(changes)] };

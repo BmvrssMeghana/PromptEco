@@ -107,6 +107,10 @@ function findContainer(el: HTMLElement): HTMLElement {
   );
 }
 
+function isPromptEcoElement(el: HTMLElement): boolean {
+  return !!el.closest('#prompteco-anchor, #prompteco-inline-root, .prompteco-container');
+}
+
 /**
  * Primary: Find the active prompt input across all supported platforms
  */
@@ -116,7 +120,7 @@ export function findComposerElement(): ComposerElementInfo | null {
   // Prefer the editor the user is actively typing in when a site renders more
   // than one composer (for example, a hidden mobile/desktop responsive copy).
   const active = document.activeElement as HTMLElement | null;
-  if (active && isVisible(active)) {
+  if (active && isVisible(active) && !isPromptEcoElement(active)) {
     const tag = active.tagName;
     const isTextArea = tag === 'TEXTAREA';
     const isCE = active.isContentEditable || active.getAttribute('contenteditable') === 'true';
@@ -137,7 +141,7 @@ export function findComposerElement(): ComposerElementInfo | null {
       const elements = document.querySelectorAll(sel);
       for (const rawEl of elements) {
         const el = rawEl as HTMLElement;
-        if (isVisible(el)) {
+        if (isVisible(el) && !isPromptEcoElement(el)) {
           return {
             inputElement: el,
             containerElement: findContainer(el),

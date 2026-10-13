@@ -1,12 +1,6 @@
-import { createRoot, Root } from 'react-dom/client';
 import { findComposerElement, readComposerText, writeComposerText, ComposerElementInfo, detectPlatform } from './composer-detector';
-import { optimizePrompt, OptimizationResult } from '../engine/optimizer';
-import { InlinePanel } from './InlinePanel';
 import { getSettings } from '../storage/storage';
-import './inline.css';
 
-let currentRoot: Root | null = null;
-let currentMountEl: HTMLElement | null = null;
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 let activeComposer: ComposerElementInfo | null = null;
 let lastAnalyzedText = '';
@@ -29,71 +23,15 @@ function broadcastLivePrompt(text: string) {
 }
 
 /**
- * Renders (or clears) the inline panel next to the AI composer
- */
-function renderPanel(analysis: OptimizationResult | null) {
-  if (!currentRoot) return;
-  currentRoot.render(
-    <InlinePanel
-      analysis={analysis}
-      onInsertToComposer={(newText) => {
-        if (activeComposer) {
-          writeComposerText(activeComposer, newText);
-          handleInputChange(newText, 'global_average');
-        }
-      }}
-      onDismiss={() => {
-        if (currentRoot) currentRoot.render(null);
-      }}
-    />
-  );
-}
-
-/**
  * Called whenever the composer text changes.
- * Updates broadcast AND runs the optimizer.
+ * Broadcasts the current composer value to the existing extension side panel.
  */
-function handleInputChange(text: string, emissionPresetId: string, shouldRenderPanel = true, force = false) {
+function handleInputChange(text: string, force = false) {
   const trimmed = text.trim();
   broadcastLivePrompt(trimmed);
 
   if (trimmed === lastAnalyzedText && !force) return;
-  if (!shouldRenderPanel) return;
   lastAnalyzedText = trimmed;
-  if (!trimmed) { renderPanel(null); return; }
-
-  const result = optimizePrompt(trimmed, emissionPresetId);
-  renderPanel(result);
-}
-
-/**
- * Creates the mount point for the PromptEco inline panel
- */
-function setupMountPoint(composer: ComposerElementInfo) {
-  // Remove old mount if present
-  if (currentMountEl && currentMountEl.parentElement) {
-    currentMountEl.parentElement.removeChild(currentMountEl);
-    currentMountEl = null;
-  }
-  if (currentRoot) {
-    currentRoot.unmount();
-    currentRoot = null;
-  }
-
-  const mount = document.createElement('div');
-  mount.id = 'prompteco-anchor';
-  mount.className = 'prompteco-anchor-wrap';
-
-  // Insert BEFORE the composer container (above the input box)
-  const targetParent = composer.containerElement.parentElement;
-  if (targetParent) {
-    targetParent.insertBefore(mount, composer.containerElement);
-  } else {
-    composer.containerElement.prepend(mount);
-  }
-
-  currentMountEl = mount;
-  currentRoot = createRoot(mount);
 }
 
 /**
@@ -101,16 +39,14 @@ function setupMountPoint(composer: ComposerElementInfo) {
  */
 function attachInputListeners(
   composer: ComposerElementInfo,
-  debounceMs: number,
-  emissionPresetId: string,
-  renderInline: boolean
+  debounceMs: number
 ) {
   const fireChange = () => {
     if (debounceTimer) clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => {
       if (activeComposer?.inputElement !== composer.inputElement) return;
       const text = readComposerText(composer);
-      handleInputChange(text, emissionPresetId, renderInline);
+      handleInputChange(text);
     }, debounceMs);
   };
 
@@ -122,21 +58,20 @@ function attachInputListeners(
 
   // Fire immediately if text already present on attach
   const existing = readComposerText(composer);
-  if (existing.trim()) handleInputChange(existing, emissionPresetId, renderInline, true);
-  else handleInputChange('', emissionPresetId, renderInline, true);
+  handleInputChange(existing, true);
 }
 
 /**
  * Checks if the composer exists and attaches PromptEco if it hasn't already
  */
-async function checkAndAttach(debounceMs: number, emissionPresetId: string, renderInline: boolean) {
+async function checkAndAttach(debounceMs: number) {
   const found = findComposerElement();
   if (!found) {
     if (activeComposer) {
       activeComposer = null;
       lastAnalyzedText = '';
       if (debounceTimer) clearTimeout(debounceTimer);
-      handleInputChange('', emissionPresetId, renderInline, true);
+      handleInputChange('', true);
     }
     return;
   }
@@ -149,10 +84,7 @@ async function checkAndAttach(debounceMs: number, emissionPresetId: string, rend
   lastAnalyzedText = '';
   activeComposer = found;
 
-  if (renderInline) {
-    setupMountPoint(found);
-  }
-  attachInputListeners(found, debounceMs, emissionPresetId, renderInline);
+  attachInputListeners(found, debounceMs);
 }
 
 /**
@@ -179,7 +111,7 @@ async function initPromptEco() {
         const found = findComposerElement();
         if (found && typeof request.text === 'string') {
           writeComposerText(found, request.text);
-          handleInputChange(request.text, settings.emissionPresetId || 'global_average');
+          handleInputChange(request.text, true);
           sendResponse({ success: true });
         } else {
           sendResponse({ success: false, reason: 'Composer not found' });
@@ -189,12 +121,10 @@ async function initPromptEco() {
     });
   }
 
-  const renderInline = settings.isInlinePanelEnabled !== false;
   const debounceMs = settings.debounceMs || 400;
-  const emissionPresetId = settings.emissionPresetId || 'global_average';
 
   // Initial attach attempt
-  await checkAndAttach(debounceMs, emissionPresetId, renderInline);
+  await checkAndAttach(debounceMs);
 
   // MutationObserver: re-check whenever DOM changes (SPA navigation, lazy loading)
   if (!observerActive) {
@@ -204,14 +134,14 @@ async function initPromptEco() {
     const observer = new MutationObserver((mutations) => {
       const relevant = mutations.some((mutation) => {
         const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement;
-        return !!target && !currentMountEl?.contains(target);
+        return !!target;
       });
       if (!relevant) return;
       if (mutationDebounce) clearTimeout(mutationDebounce);
       mutationDebounce = setTimeout(() => {
-        void checkAndAttach(debounceMs, emissionPresetId, renderInline).then(() => {
+        void checkAndAttach(debounceMs).then(() => {
           if (activeComposer) {
-            handleInputChange(readComposerText(activeComposer), emissionPresetId, renderInline);
+            handleInputChange(readComposerText(activeComposer));
           }
         });
       }, debounceMs);
@@ -233,12 +163,12 @@ async function initPromptEco() {
     if (activeComposer?.inputElement !== found.inputElement) {
       // Composer element was replaced — re-attach
       activeComposer = null;
-      checkAndAttach(debounceMs, emissionPresetId, renderInline);
+      checkAndAttach(debounceMs);
     } else if (activeComposer) {
       // Same element — just broadcast current value
       const text = readComposerText(activeComposer);
       if (text.trim() !== lastAnalyzedText) {
-        handleInputChange(text, emissionPresetId, renderInline, true);
+        handleInputChange(text, true);
       }
     }
   }, 1500);

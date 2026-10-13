@@ -10,6 +10,15 @@ test('live detector covers current ChatGPT and Claude composer variants', async 
     assert.ok(source.includes(selector), `missing composer selector ${selector}`);
   }
   assert.match(source, /active\.isContentEditable/);
+  assert.match(source, /isPromptEcoElement\(el\)/);
+  assert.match(source, /isPromptEcoElement\(active\)/);
+});
+
+test('extension side panel applies empty live composer values instead of retaining stale text', async () => {
+  const source = await readSource('../popup/Popup.tsx');
+  assert.match(source, /setPromptInput\(response\.text \|\| ''\)/);
+  assert.match(source, /setPromptInput\(currentPrompt\)/);
+  assert.match(source, /Composer empty/);
 });
 
 test('live input changes and DOM edits are debounced into the current analysis', async () => {
@@ -18,10 +27,11 @@ test('live input changes and DOM edits are debounced into the current analysis',
     assert.ok(source.includes(`addEventListener('${event}'`), `missing ${event} listener`);
   }
   assert.match(source, /characterData:\s*true/);
-  assert.match(source, /handleInputChange\(readComposerText\(activeComposer\), emissionPresetId, renderInline\)/);
-  assert.match(source, /checkAndAttach\(debounceMs, emissionPresetId, renderInline\)/);
+  assert.match(source, /handleInputChange\(readComposerText\(activeComposer\)\)/);
+  assert.match(source, /checkAndAttach\(debounceMs\)/);
   assert.match(source, /activeComposer\?\.inputElement !== composer\.inputElement/);
-  assert.match(source, /handleInputChange\('', emissionPresetId, renderInline, true\)/);
+  assert.match(source, /handleInputChange\('', true\)/);
+  assert.doesNotMatch(source, /InlinePanel|setupMountPoint|renderPanel/);
 });
 
 test('unchanged UI state does not claim optimization or savings', async () => {

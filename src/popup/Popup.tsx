@@ -104,7 +104,9 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
         const newText = changes.prompteco_live_prompt.newValue || '';
         if (!isInputFocusedRef.current && !isUserEdited) {
           setPromptInput(newText);
-          if (newText.trim()) setConnectedSource('Live · ' + (changes.prompteco_live_origin?.newValue || 'AI site'));
+          setConnectedSource(newText.trim()
+            ? 'Live · ' + (changes.prompteco_live_origin?.newValue || 'AI site')
+            : 'Composer empty');
         }
       }
     };
@@ -150,11 +152,13 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
               checkStorageFallback();
               return;
             }
-            if (response.text) {
-              setPromptInput(response.text);
-              setConnectedSource(`Live from ${formatPlatform(response.platform, response.url)}`);
-            } else {
-              setConnectedSource(`${formatPlatform(response.platform, response.url)} (Composer empty)`);
+            if (!isInputFocusedRef.current && !isUserEdited) {
+              // Empty text is a real current value (for example after deleting the draft),
+              // not a reason to keep showing the last prompt.
+              setPromptInput(response.text || '');
+              setConnectedSource(response.text?.trim()
+                ? `Live from ${formatPlatform(response.platform, response.url)}`
+                : `${formatPlatform(response.platform, response.url)} (Composer empty)`);
             }
           });
         } else {
@@ -169,11 +173,12 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
   const checkStorageFallback = () => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.get(['prompteco_live_prompt', 'prompteco_live_origin'], (res) => {
-        if (res.prompteco_live_prompt) {
-          setPromptInput(res.prompteco_live_prompt);
-          setConnectedSource(`Live from ${res.prompteco_live_origin || 'AI tool'}`);
-        } else {
-          setConnectedSource('Ready · Type prompt or open ChatGPT/Claude');
+        if (!isInputFocusedRef.current && !isUserEdited) {
+          const currentPrompt = res.prompteco_live_prompt || '';
+          setPromptInput(currentPrompt);
+          setConnectedSource(currentPrompt.trim()
+            ? `Live from ${res.prompteco_live_origin || 'AI tool'}`
+            : 'Ready · Type prompt or open ChatGPT/Claude');
         }
       });
     } else {

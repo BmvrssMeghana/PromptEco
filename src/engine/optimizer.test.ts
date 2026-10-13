@@ -40,6 +40,19 @@ test('removes safe introductory request framing', () => {
   assert.equal(result.optimizedPrompt, 'Summarize the causes of urban heat islands.');
 });
 
+test('removes casual framing and an obvious repeated typing word from the current prompt', () => {
+  const result = optimizePrompt('hello so iam trying trying');
+  assert.equal(result.status, 'optimized');
+  assert.equal(result.optimizedPrompt, 'iam trying');
+  assert.ok(result.originalTokens.tokens > result.optimizedTokens.tokens);
+  assert.equal(result.impact.reductionPercentage > 0, true);
+});
+
+test('does not collapse repeated words that can change emphasis or grammar', () => {
+  const prompt = 'Explain why the phrase “had had” appears in this sentence.';
+  assert.equal(optimizePrompt(prompt).optimizedPrompt, prompt);
+});
+
 test('retains negations, quantities, dates, formats, identifiers, and technical terms', () => {
   const prompt = 'Could you please analyze PostgreSQL query plan idx_orders_created_at for 12 records dated 2025-04-03, and return exactly 4 JSON bullet points? Do not use external libraries.';
   const result = optimizePrompt(prompt);
