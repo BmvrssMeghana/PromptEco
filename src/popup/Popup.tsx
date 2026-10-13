@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Leaf, BarChart3, History, LayoutTemplate, Settings as SettingsIcon, Copy, Check, Trash2, ArrowUpRight, Radio, ClipboardCopy } from 'lucide-react';
-import { getStats, getSettings, saveSettings, getActivityHistory, clearAllData, AggregateStats, PromptEcoSettings, ActivityEntry } from '../storage/storage';
+import { getStats, getSettings, saveSettings, getActivityHistory, clearAllData, recordOptimizationUsage, AggregateStats, PromptEcoSettings, ActivityEntry } from '../storage/storage';
 import { EMISSION_PRESETS, formatCarbon } from '../engine/carbon';
 import { optimizePrompt, OptimizationResult } from '../engine/optimizer';
 
@@ -228,6 +228,19 @@ export const Popup: React.FC<PopupProps> = ({ pagePrompt, onInsertToPage }) => {
   const handleCopy = async () => {
     if (!testResult) return;
     await navigator.clipboard.writeText(testResult.optimizedPrompt || promptInput);
+    // Aggregate savings represent prompts the user actually reuses, not every
+    // keystroke in the live composer. Persist the current calculation here.
+    const updatedStats = await recordOptimizationUsage({
+      originalTokens: testResult.originalTokens.tokens,
+      optimizedTokens: testResult.optimizedTokens.tokens,
+      tokensSaved: testResult.impact.tokensSaved,
+      savedGramsCO2: testResult.impact.savedGramsCO2,
+      category: testResult.classification.label,
+      rawPrompt: promptInput,
+      wasCopied: true
+    });
+    setStats(updatedStats);
+    setHistory(await getActivityHistory());
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

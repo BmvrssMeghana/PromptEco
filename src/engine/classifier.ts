@@ -24,6 +24,8 @@ export interface TaskClassification {
 const PATTERNS: Record<TaskCategory, RegExp[]> = {
   coding: [
     /\b(?:code|function|debug|algorithm|script|api|component|refactor|sql|query|class|method|regex|database|backend|frontend)\b/i,
+    /\b(?:layout|stylesheet|template|view|component|page)\s+file\b/i,
+    /\b(?:change|update|modify|rewrite|style|implement)\b.{0,48}\b(?:button|colour|color|css|layout|theme)\b/i,
     /\b(?:write|create|implement|build)\s+(?:a|an)?\s*(?:python|javascript|typescript|react|java|c\+\+|rust|html|css|sql|bash)\b/i,
     /```[\s\S]*?```/,
     /\b(?:fix this error|syntax error|stack trace|npm|git)\b/i
