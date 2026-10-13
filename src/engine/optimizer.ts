@@ -33,6 +33,16 @@ function normalizeWhitespace(text: string): string {
   return text.replace(/[\t ]+/g, ' ').replace(/\n[\t ]+/g, '\n').replace(/[\t ]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
+function unwrapPromptQuotation(text: string): string {
+  const pairs: Array<[string, string]> = [['"', '"'], ["'", "'"], ['“', '”'], ['‘', '’'], ['«', '»'], ['‹', '›']];
+  for (const [open, close] of pairs) {
+    if (text.startsWith(open) && text.endsWith(close) && text.length > open.length + close.length) {
+      return text.slice(open.length, -close.length).trim();
+    }
+  }
+  return text;
+}
+
 /** Repeats are removed only when the complete sentence is an exact duplicate. */
 function removeRepeatedSentences(text: string): { text: string; removed: boolean } {
   // Code and quoted material may intentionally repeat; leave the whole prompt alone.
@@ -142,6 +152,11 @@ function optimizeText(original: string): { text: string; changes: string[] } {
   if (normalized !== text) {
     text = normalized;
     changes.push('Normalized whitespace');
+  }
+  const unwrapped = unwrapPromptQuotation(text);
+  if (unwrapped !== text) {
+    text = unwrapped;
+    changes.push('Removed outer quotation marks');
   }
 
   // Never rewrite code-heavy prompts: they often contain significant syntax and comments.
